@@ -1,0 +1,3 @@
+Threshold = 179.1196884119447
+Max Difference Junction = 51
+Number of Junctions = 53
