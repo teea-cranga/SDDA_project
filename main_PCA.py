@@ -118,27 +118,8 @@ R_df.to_csv(path_or_buf='./dataOUT/R.csv')
 graphics.correlogram(factorLoadings_df)
 plt.savefig('./graphsPCA/correlogram')
 
-# correlogram of correlation matrix
-graphics.correlogram(R_df, valmin=-1, valmax=1,
-                     title='Correlation matrix of causal variables')
-plt.savefig('./graphsPCA/correlation_matrix_causal_variables')
-
 # the principal components graphic
 graphics.plot_variance(eigenvalues)
 plt.savefig('./graphsPCA/principal_components')
-
-# quality of the observations representation
-graphics.intensity_map(obsQuality_df.iloc[:, :], dec=2,
-                       title='Quality of observations on the axes of the principal components')
-plt.savefig('./graphsPCA/quality_observations')
-
-# graphic of intensity of factorial scores
-graphics.intensity_map(scores_df.iloc[:, :], dec=2, title="Intensity of factorial scores")
-plt.savefig('./graphsPCA/intensity_scores')
-
-# graph of communalities
-graphics.intensity_map(commun_df, dec=1,
-                       title='Communalities of the principal components found in the causal variables')
-plt.savefig('./graphsPCA/communalities')
 
 graphics.show()

@@ -2,12 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.cluster.hierarchy as hic
-import scipy.spatial.distance as dis
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 
 def dendrogram(h, labels, title='Hierarchical Classification', threshold=None):
     """
-    Plots  dendrogram
+    Plots dendrogram
     """
     plt.figure(figsize=(15, 8))
     plt.title(title, fontsize=16, color='k')
@@ -15,18 +15,20 @@ def dendrogram(h, labels, title='Hierarchical Classification', threshold=None):
     if threshold:
         plt.axhline(threshold, c='r', linestyle='--', label=f'Threshold: {threshold:.2f}')
         plt.legend()
-    plt.xlabel('Observations', fontsize=14, color='k')
+    plt.xlabel('Fraud', fontsize=14, color='k')
     plt.ylabel('Distance', fontsize=14, color='k')
 
 
 def threshold(h):
     """
-    optimal threshold for cutting the dendrogram.
+    Optimal threshold for cutting the dendrogram.
     """
     m = np.shape(h)[0]
     dist_1 = h[1:m, 2]
     dist_2 = h[0:m - 1, 2]
     diff = dist_1 - dist_2
+
+
     j = np.argmax(diff)
     threshold_value = (h[j, 2] + h[j + 1, 2]) / 2
     return threshold_value, j, m
@@ -47,18 +49,43 @@ def clusters(h, k):
     return ['C' + str(i) for i in cat.codes], cat.codes
 
 
+def preprocess_data(table):
+    """
+    Preprocess the input data: normalize numerical columns and encode categorical columns.
+    """
+    numerical_cols = [ 'distance_from_last_transaction', 'ratio_to_median_purchase_price']
+    categorical_cols = ['repeat_retailer', 'used_chip', 'used_pin_number', 'online_order', 'fraud']
+
+    # Normalize numerical data
+    scaler = StandardScaler()
+    table[numerical_cols] = scaler.fit_transform(table[numerical_cols])
+
+    # Encode categorical data
+    for col in categorical_cols:
+        table[col] = LabelEncoder().fit_transform(table[col])
+
+    return table
+
+
 def hierarchical_clustering(input_file, output_dir, start_idx=0, end_idx=None, method="ward", metric="euclidean"):
     """
     Main function to perform Hierarchical Clustering Analysis (HCA).
-
-        method (str): Linkage method for clustering.
-        metric (str): Distance metric for clustering.
     """
     try:
         # Load dataset
-        table = pd.read_csv(input_file, index_col=0, na_values='')
-        obs_names = [int(i) for i in table.index[start_idx:end_idx]]
-        X = table.iloc[start_idx:end_idx, :].values
+        table = pd.read_csv(input_file, na_values='')
+        print(table.columns)
+        # Extract the first column as labels
+        labels_column = table.iloc[:, 0].values  # First column for labels
+        table = table.iloc[:, 1:]  # Remove the first column from data
+
+
+        # Preprocess the data
+        table = preprocess_data(table)
+
+        # Prepare data for clustering
+        fraud_labels = table['fraud'].iloc[start_idx:end_idx].values  # Only for visualization
+        X = table.iloc[start_idx:end_idx, :].drop(columns=['fraud']).values  # Exclude target
 
         # Perform Hierarchical Clustering
         HC = hic.linkage(X, method=method, metric=metric)
@@ -68,20 +95,11 @@ def hierarchical_clustering(input_file, output_dir, start_idx=0, end_idx=None, m
         with open(f'{output_dir}/result.txt', 'w') as file:
             file.write(f'Threshold = {t}\nMax Difference Junction = {j}\nNumber of Junctions = {m}')
 
-        # Generate and save dendrogram
-        dendrogram(HC, labels=obs_names, title=f'Hierarchical Classification ({method} - {metric})', threshold=t)
+        # Generate dendrogram
+        dendrogram(HC, labels=fraud_labels, title=f'Hierarchical Classification ({method} - {metric})', threshold=t)
         plt.savefig(f'{output_dir}/hierarchical_classification.png')
 
-        # Determine clusters and save them
-        k = m - j
-        labels, codes = clusters(HC, k)
-        ClusterTab = pd.DataFrame(data=labels, index=obs_names, columns=['Cluster'])
-        ClusterTab.to_csv(f'{output_dir}/indClusters.csv')
-
         print("HCA Analysis Complete. Results saved in:", output_dir)
-        #plt.yticks(np.arange(0, 250, 25))
-        plt.yscale('symlog') #
-
         plt.show()
 
     except Exception as e:
@@ -90,7 +108,7 @@ def hierarchical_clustering(input_file, output_dir, start_idx=0, end_idx=None, m
 
 if __name__ == "__main__":
     # Example usage
-    input_file = "dataIN/cards.csv"
+    input_file = "dataIN/card_transdata.csv"
     output_dir = "./dataOUT"
     start_idx = 10
     end_idx = 64

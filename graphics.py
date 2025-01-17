@@ -29,13 +29,6 @@ def plot_variance(alpha, title='Eigenvalues - '
     plt.axhline(1, color='r')
 
 
-def intensity_map(R2, dec=1, title='Intensity Map', valmin=None, valmax=None, ):
-    plt.figure(title, figsize=(18, 14))
-    plt.title(title, fontsize=16, color='k', verticalalignment='bottom')
-    sb.heatmap(data=np.round(R2, dec), vmin=valmin, vmax=valmax,
-               cmap='Oranges', annot=True)
-
-
 def show():
     plt.show()
 # endregion
